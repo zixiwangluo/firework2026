@@ -1,0 +1,1551 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>再见2025，你好2026</title>
+  <style>
+    :root{
+      --bg0:#02040f;
+      --bg1:#050a1f;
+      --cyan:#4fd2ff;
+      --pink:#ff4fd8;
+      --violet:#9b6bff;
+      --green:#48ff9a;
+      --gold:#ffd27a;
+      --red:#ff4f4f;
+    }
+    *{ box-sizing:border-box; }
+    html,body{
+      height:100%;
+      margin:0;
+      background: radial-gradient(1200px 800px at 50% 85%, #08143b 0%, var(--bg1) 35%, var(--bg0) 75%, #000 100%);
+      overflow:hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC","Microsoft YaHei","Noto Sans CJK SC", Arial, sans-serif;
+      color:#fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+    canvas{ position:fixed; inset:0; width:100%; height:100%; display:block; }
+    #stars{ z-index:0; }
+    #fx{ z-index:2; }
+
+    .aurora{
+      position:fixed; inset:-20%; z-index:1; pointer-events:none;
+      background:
+        radial-gradient(closest-side at 30% 70%, rgba(79,210,255,.18), transparent 70%),
+        radial-gradient(closest-side at 60% 75%, rgba(255,79,216,.14), transparent 75%),
+        radial-gradient(closest-side at 55% 50%, rgba(155,107,255,.10), transparent 72%),
+        radial-gradient(closest-side at 40% 55%, rgba(72,255,154,.08), transparent 70%);
+      filter: blur(22px) saturate(1.15);
+      mix-blend-mode: screen;
+      opacity:.9;
+      animation: drift 14s ease-in-out infinite alternate;
+    }
+    @keyframes drift{
+      0%{ transform: translate3d(-2%, 2%, 0) scale(1.02) rotate(-1deg); }
+      100%{ transform: translate3d(2%, -2%, 0) scale(1.06) rotate(1deg); }
+    }
+
+    .hero{
+      position:fixed; inset:0; z-index:5;
+      display:flex; align-items:flex-start; justify-content:center;
+      padding-top: clamp(18px, 4.5vh, 56px);
+      pointer-events:none;
+    }
+    .titleWrap{
+      text-align:center;
+      filter: drop-shadow(0 0 22px rgba(79,210,255,.18)) drop-shadow(0 0 36px rgba(255,79,216,.14));
+    }
+    h1{
+      margin:0;
+      letter-spacing:.06em;
+      font-weight: 900;
+      font-size: clamp(26px, 5vw, 70px);
+      line-height:1.08;
+      background: linear-gradient(90deg,
+        rgba(255,255,255,.95),
+        rgba(79,210,255,.95),
+        rgba(255,79,216,.92),
+        rgba(255,210,122,.95),
+        rgba(255,255,255,.95)
+      );
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      text-shadow:
+        0 0 10px rgba(79,210,255,.25),
+        0 0 22px rgba(255,79,216,.18),
+        0 0 36px rgba(255,210,122,.10);
+    }
+    .sub{
+      margin-top: 8px;
+      font-size: clamp(11px, 1.8vw, 18px);
+      letter-spacing:.18em;
+      color: rgba(255,255,255,.80);
+      text-shadow: 0 0 16px rgba(79,210,255,.12);
+    }
+
+    .horizon{
+      position:fixed; left:0; right:0; bottom:-1px; height: 22vh;
+      background:
+        radial-gradient(140% 90% at 50% 110%, rgba(79,210,255,.22), transparent 55%),
+        linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.15), transparent);
+      pointer-events:none;
+      z-index:3;
+    }
+
+    /* 闪光白幕（不刺眼） */
+    .screenFX{
+      position: fixed; inset: 0; z-index: 8; pointer-events:none;
+      background: radial-gradient(closest-side at 50% 45%, rgba(255,255,255,.26), rgba(255,255,255,0) 62%);
+      opacity: 0;
+      transition: opacity 120ms linear;
+      mix-blend-mode: screen;
+    }
+
+    /* ===== 收缩按钮（全透明，不影响画面）===== */
+    .panelDock{
+      position:fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 12;
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.0);
+      border: 1px solid rgba(255,255,255,0.0);
+      backdrop-filter: blur(0px);
+      -webkit-backdrop-filter: blur(0px);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+    }
+    /* 给一点点“可点但不显眼”的反馈：按下才出现 */
+    .panelDock:active{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.10);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .dockIcon{
+      width: 22px;
+      height: 22px;
+      opacity: 0.0; /* 全透明图标：完全不影响画面 */
+    }
+    .panelDock:active .dockIcon{ opacity: .55; }
+
+    /* ===== 面板（展开后）===== */
+    .panel{
+      position:fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 13;
+      width: min(270px, calc(100vw - 20px));
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 12px 30px rgba(0,0,0,.30);
+      color: rgba(255,255,255,.92);
+      user-select:none;
+
+      transform-origin: top right;
+      transform: scale(1);
+      opacity: 1;
+      transition: transform .16s ease, opacity .16s ease;
+    }
+    .panel[hidden]{
+      display:block;
+      opacity:0;
+      transform: scale(.92);
+      pointer-events:none;
+    }
+    .panel .title{
+      font-size: 12px;
+      opacity:.86;
+      letter-spacing:.18em;
+      padding-bottom:6px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      margin-bottom: 6px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .panel .closeBtn{
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.16);
+      color: rgba(255,255,255,.86);
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor:pointer;
+      letter-spacing:.18em;
+      font-size: 12px;
+    }
+    .panel .row{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      padding: 6px 2px;
+      font-size: 12px;
+      letter-spacing:.12em;
+    }
+    .toggle{
+      width: 46px; height: 24px; border-radius: 999px;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.18);
+      position:relative; flex: 0 0 auto;
+      cursor:pointer;
+      touch-action: manipulation;
+    }
+    .toggle::after{
+      content:"";
+      position:absolute;
+      top: 50%; transform: translateY(-50%);
+      left: 3px;
+      width: 18px; height: 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 0 14px rgba(79,210,255,.20);
+      transition: transform .18s ease, background .18s ease;
+    }
+    .toggle[data-on="true"]{
+      background: rgba(79,210,255,.22);
+      border-color: rgba(79,210,255,.28);
+    }
+    .toggle[data-on="true"]::after{ transform: translate(22px, -50%); background: rgba(255,255,255,.98); }
+
+    .countdownSmall{
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      opacity: .92;
+      letter-spacing:.12em;
+      text-shadow: 0 0 14px rgba(79,210,255,.12);
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    .chip{
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.18);
+      cursor:pointer;
+      font-size: 12px;
+      letter-spacing:.12em;
+      opacity:.92;
+      touch-action: manipulation;
+    }
+    .chip[data-on="true"]{
+      background: rgba(79,210,255,.18);
+      border-color: rgba(79,210,255,.28);
+      opacity: 1;
+    }
+
+    .panel button{
+      width:100%;
+      margin-top:8px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.20);
+      color: rgba(255,255,255,.92);
+      letter-spacing:.18em;
+      cursor:pointer;
+      touch-action: manipulation;
+    }
+
+    /* 倒计时按钮（面板内） */
+    .countBtn{
+      width: 120px;
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      cursor:pointer;
+      letter-spacing:.12em;
+      font-variant-numeric: tabular-nums;
+      white-space:nowrap;
+      touch-action: manipulation;
+    }
+    .countBtn[data-on="true"]{
+      background: rgba(79,210,255,.16);
+      border-color: rgba(79,210,255,.28);
+    }
+
+    /* ===== 三体式中屏倒计时投射 ===== */
+    .countdownOverlay{
+      position:fixed;
+      inset:0;
+      z-index: 7;
+      pointer-events:none;
+      display:grid;
+      place-items:center;
+      opacity: 1;
+      transition: opacity .2s ease;
+    }
+    .countdownOverlay[hidden]{
+      display:grid;
+      opacity: 0;
+    }
+    .holo{
+      position:relative;
+      padding: 18px 22px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transform: translateZ(0);
+      mix-blend-mode: screen;
+      filter: drop-shadow(0 0 30px rgba(79,210,255,.10));
+    }
+    .holoTime{
+      font-weight: 700;
+      letter-spacing: .22em;
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(28px, 6.4vw, 78px);
+      color: rgba(255,255,255,0.14);
+      text-shadow:
+        0 0 10px rgba(79,210,255,.14),
+        0 0 22px rgba(79,210,255,.10);
+      position:relative;
+    }
+    /* 色散/重影 */
+    .holoTime::before,
+    .holoTime::after{
+      content: attr(data-t);
+      position:absolute;
+      top:0; left:0;
+      opacity: .22;
+      pointer-events:none;
+      mix-blend-mode: screen;
+      filter: blur(.2px);
+    }
+    .holoTime::before{ transform: translate(-1px, 0); color: rgba(79,210,255,.18); }
+    .holoTime::after { transform: translate( 1px, 0); color: rgba(255,79,216,.12); }
+
+    /* 扫描线 + 噪声（非常淡） */
+    .holo::before{
+      content:"";
+      position:absolute; inset:0;
+      border-radius: inherit;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,0.06) 0px,
+          rgba(255,255,255,0.06) 1px,
+          rgba(255,255,255,0.0) 3px,
+          rgba(255,255,255,0.0) 6px
+        );
+      opacity: .10;
+      mix-blend-mode: overlay;
+      animation: scan 2.2s linear infinite;
+      mask-image: radial-gradient(closest-side at 50% 50%, rgba(0,0,0,1), rgba(0,0,0,0.55), rgba(0,0,0,0));
+    }
+    @keyframes scan{
+      0%{ transform: translateY(-12px); }
+      100%{ transform: translateY(12px); }
+    }
+    .holo::after{
+      content:"";
+      position:absolute; inset:-2px;
+      border-radius: inherit;
+      background:
+        radial-gradient(closest-side at 50% 40%, rgba(79,210,255,.10), rgba(0,0,0,0) 60%),
+        radial-gradient(closest-side at 30% 60%, rgba(255,79,216,.06), rgba(0,0,0,0) 62%);
+      opacity: .28;
+      filter: blur(10px);
+      pointer-events:none;
+    }
+
+    .hint{
+      position:fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 14px;
+      z-index: 9;
+      font-size: 12px;
+      letter-spacing:.12em;
+      color: rgba(255,255,255,.66);
+      text-shadow: 0 0 12px rgba(79,210,255,.12);
+      pointer-events:none;
+      white-space:nowrap;
+      padding: 0 10px;
+      text-align:center;
+    }
+
+    /* 手机端：面板更窄、字号更大一点、按钮更好点 */
+    @media (max-width: 480px){
+      .panelDock{ width: 52px; height: 52px; border-radius: 14px; }
+      .panel{ width: min(300px, calc(100vw - 16px)); top: 8px; right: 8px; }
+      .panel .row{ font-size: 13px; }
+      .countBtn{ width: 132px; }
+      .hint{ font-size: 11px; }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .aurora{ animation:none; }
+      .holo::before{ animation:none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <canvas id="stars"></canvas>
+  <canvas id="fx"></canvas>
+  <div class="screenFX" id="screenFX"></div>
+
+  <!-- 三体式中屏倒计时（默认开启） -->
+  <div id="countOverlay" class="countdownOverlay">
+    <div class="holo" aria-hidden="true">
+      <div id="holoTime" class="holoTime" data-t="--:--:--">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="hero" aria-hidden="true">
+    <div class="titleWrap">
+      <h1>再见2025，你好2026</h1>
+      <div class="sub">愿你新年光芒万丈 · WISH YOU A BRIGHT 2026</div>
+    </div>
+  </div>
+
+  <div class="horizon" aria-hidden="true"></div>
+
+  <!-- 全透明收缩按钮（默认显示） -->
+  <div id="dock" class="panelDock" aria-label="打开控制面板" title="打开控制面板">
+    <svg class="dockIcon" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="white" d="M4 7h16v2H4zm0 4h16v2H4zm0 4h12v2H4z"/>
+    </svg>
+  </div>
+
+  <!-- 面板（默认隐藏） -->
+  <div id="panel" class="panel" hidden>
+    <div class="title">
+      <span>控制面板</span>
+      <button id="btnClose" class="closeBtn">收起</button>
+    </div>
+
+    <div class="row">
+      <div>倒计时投射</div>
+      <div id="btnCountdown" class="countBtn" data-on="true">开启</div>
+    </div>
+
+    <div class="row">
+      <div>倒计时(小)</div>
+      <div id="countdownSmall" class="countdownSmall">--</div>
+    </div>
+
+    <div class="row">
+      <div>音效(发射/啸叫/爆炸)</div>
+      <div id="tAudio" class="toggle" data-on="false"></div>
+    </div>
+
+    <div class="row">
+      <div>自动烟花</div>
+      <div id="tAuto" class="toggle" data-on="true"></div>
+    </div>
+
+    <div class="row">
+      <div>零点连发</div>
+      <div id="tFinale" class="toggle" data-on="true"></div>
+    </div>
+
+    <div class="row">
+      <div>性能档位</div>
+      <div style="display:flex; gap:8px;">
+        <div id="qHigh" class="chip" data-on="false">高</div>
+        <div id="qMid" class="chip" data-on="true">中</div>
+        <div id="qLow" class="chip" data-on="false">低</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>帧率(估算)</div>
+      <div id="fps" class="countdownSmall">--</div>
+    </div>
+
+    <button id="btnFinale">立即连发（测试）</button>
+  </div>
+
+  <div class="hint" aria-hidden="true">提示：右上角全透明区域可打开面板；点屏幕发射；音效需要先手动开启</div>
+
+<script>
+(() => {
+  // ===== DOM =====
+  const stars = document.getElementById('stars');
+  const fx = document.getElementById('fx');
+  const sctx = stars.getContext('2d');
+  const ctx = fx.getContext('2d');
+
+  const $screenFX = document.getElementById('screenFX');
+
+  const $dock = document.getElementById('dock');
+  const $panel = document.getElementById('panel');
+  const $btnClose = document.getElementById('btnClose');
+
+  const $btnCountdown = document.getElementById('btnCountdown');
+  const $countdownSmall = document.getElementById('countdownSmall');
+
+  const $countOverlay = document.getElementById('countOverlay');
+  const $holoTime = document.getElementById('holoTime');
+
+  const $tAudio = document.getElementById('tAudio');
+  const $tAuto = document.getElementById('tAuto');
+  const $tFinale = document.getElementById('tFinale');
+  const $btnFinale = document.getElementById('btnFinale');
+
+  const $qHigh = document.getElementById('qHigh');
+  const $qMid = document.getElementById('qMid');
+  const $qLow = document.getElementById('qLow');
+  const $fps = document.getElementById('fps');
+
+  // ===== Time =====
+  const TARGET = new Date(2026, 0, 1, 0, 0, 0, 0).getTime();
+
+  // ===== State =====
+  let DPR = Math.min(2, window.devicePixelRatio || 1);
+
+  const state = {
+    panelOpen: false,
+    countdownOverlay: true, // 默认开启投射倒计时
+    auto: true,
+    audio: false,
+    finaleAtMidnight: true,
+    finaleTriggered: false,
+    quality: "mid",
+    dyn: { lastAdjust: 0 },
+  };
+
+  // ===== Perf =====
+  const perf = {
+    maxParticles: 1500,
+    maxRockets: 18,
+    shadowBlur: 8,
+    smoke: { enabled:true, max: 320 },
+    textChance: 0.035,
+    autoInterval: [650, 1150],
+    fadeAlpha: 0.20,
+  };
+
+  function setToggle(el, on){ el.dataset.on = on ? "true" : "false"; }
+  function setChip(el, on){ el.dataset.on = on ? "true" : "false"; }
+
+  function applyQuality(q){
+    state.quality = q;
+    setChip($qHigh, q==="high");
+    setChip($qMid,  q==="mid");
+    setChip($qLow,  q==="low");
+
+    if(q==="high"){
+      DPR = Math.min(2, window.devicePixelRatio || 1);
+      perf.maxParticles = 2400;
+      perf.shadowBlur = 12;
+      perf.smoke = { enabled:true, max: 520 };
+      perf.textChance = 0.06;
+      perf.autoInterval = [520, 980];
+      perf.fadeAlpha = 0.18;
+    } else if(q==="mid"){
+      DPR = Math.min(1.5, window.devicePixelRatio || 1);
+      perf.maxParticles = 1500;
+      perf.shadowBlur = 8;
+      perf.smoke = { enabled:true, max: 320 };
+      perf.textChance = 0.035;
+      perf.autoInterval = [650, 1150];
+      perf.fadeAlpha = 0.20;
+    } else {
+      DPR = 1;
+      perf.maxParticles = 900;
+      perf.shadowBlur = 5;
+      perf.smoke = { enabled:true, max: 200 };
+      perf.textChance = 0.02;
+      perf.autoInterval = [820, 1400];
+      perf.fadeAlpha = 0.22;
+    }
+    resize();
+  }
+
+  // ===== Utils =====
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+
+  const palette = [
+    [79,210,255],  [255,79,216], [155,107,255],
+    [72,255,154],  [255,210,122],[255,79,79],
+    [255,255,255]
+  ];
+  function pickColor(){ return palette[(Math.random()*palette.length)|0]; }
+  function colorShift([r,g,b], amount){
+    return [
+      clamp(r + rand(-amount, amount), 0, 255),
+      clamp(g + rand(-amount, amount), 0, 255),
+      clamp(b + rand(-amount, amount), 0, 255),
+    ];
+  }
+
+  // ===== Resize =====
+  let W=0,H=0;
+  function resize(){
+    W = Math.floor(innerWidth);
+    H = Math.floor(innerHeight);
+    for (const c of [stars, fx]){
+      c.width = Math.floor(W * DPR);
+      c.height = Math.floor(H * DPR);
+      c.style.width = W+'px';
+      c.style.height = H+'px';
+      c.getContext('2d').setTransform(DPR,0,0,DPR,0,0);
+    }
+    buildStarfield();
+    buildSmokeStamp();
+  }
+  addEventListener('resize', resize, {passive:true});
+
+  // ===== Stars =====
+  let STAR = [];
+  function buildStarfield(){
+    STAR = [];
+    const count = Math.floor((W*H)/26000);
+    for(let i=0;i<count;i++){
+      STAR.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: Math.random()*1.1 + 0.2,
+        a: Math.random()*0.50 + 0.18,
+        tw: Math.random()*0.9 + 0.2
+      });
+    }
+    drawStars(0);
+  }
+  function drawStars(t){
+    sctx.clearRect(0,0,W,H);
+    const g = sctx.createRadialGradient(W*0.5,H*0.85, 0, W*0.5,H*0.6, Math.max(W,H));
+    g.addColorStop(0, "rgba(8,14,40,1)");
+    g.addColorStop(0.55, "rgba(3,7,20,1)");
+    g.addColorStop(1, "rgba(0,0,0,1)");
+    sctx.fillStyle = g;
+    sctx.fillRect(0,0,W,H);
+
+    for(const st of STAR){
+      const a = st.a + Math.sin((t*0.001)*st.tw + st.x*0.02)*0.14;
+      sctx.fillStyle = `rgba(255,255,255,${Math.max(0, Math.min(1,a))})`;
+      sctx.beginPath();
+      sctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
+      sctx.fill();
+    }
+  }
+
+  // ===== Smoke stamp =====
+  let smokeStamp = null;
+  function buildSmokeStamp(){
+    const c = document.createElement('canvas');
+    const size = state.quality==="high" ? 128 : (state.quality==="mid" ? 96 : 72);
+    c.width = c.height = size;
+    const cctx = c.getContext('2d');
+    const r = size/2;
+    const g = cctx.createRadialGradient(r,r, 0, r,r, r);
+    g.addColorStop(0, "rgba(255,255,255,0.22)");
+    g.addColorStop(0.35, "rgba(255,255,255,0.10)");
+    g.addColorStop(1, "rgba(255,255,255,0.0)");
+    cctx.fillStyle = g;
+    cctx.beginPath();
+    cctx.arc(r,r,r,0,Math.PI*2);
+    cctx.fill();
+    smokeStamp = c;
+  }
+
+  // ===== Audio: 更真实的发射 + 上升啸叫 + 爆炸 =====
+  const AudioSys = (() => {
+    let ac=null, master=null, rumbleGain=null, rumbleOsc=null, enabled=false;
+
+    function ensure(){
+      if(ac) return;
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+
+      master = ac.createGain();
+      master.gain.value = 0.0;
+      master.connect(ac.destination);
+
+      // 低频环境轰鸣（很轻）
+      rumbleGain = ac.createGain();
+      rumbleGain.gain.value = 0.0;
+      rumbleGain.connect(master);
+
+      rumbleOsc = ac.createOscillator();
+      rumbleOsc.type="sine";
+      rumbleOsc.frequency.value = 34;
+      rumbleOsc.connect(rumbleGain);
+      rumbleOsc.start();
+
+      // LFO
+      const lfo = ac.createOscillator();
+      lfo.type="sine";
+      lfo.frequency.value = 0.22;
+      const lfoGain = ac.createGain();
+      lfoGain.gain.value = 5;
+      lfo.connect(lfoGain);
+      lfoGain.connect(rumbleOsc.frequency);
+      lfo.start();
+    }
+
+    async function setEnabled(on){
+      ensure();
+      if(ac.state !== "running"){ try{ await ac.resume(); }catch{} }
+      enabled = !!on;
+      const t = ac.currentTime;
+      master.gain.cancelScheduledValues(t);
+      master.gain.setValueAtTime(master.gain.value, t);
+      master.gain.linearRampToValueAtTime(enabled ? 0.75 : 0.0, t + 0.18);
+
+      rumbleGain.gain.cancelScheduledValues(t);
+      rumbleGain.gain.setValueAtTime(rumbleGain.gain.value, t);
+      rumbleGain.gain.linearRampToValueAtTime(enabled ? 0.10 : 0.0, t + 0.35);
+    }
+
+    // 发射声：更像“嘭一下 + 气流噪声”而不是科幻 whoosh
+    function launchPop(intensity=1){
+      if(!enabled) return;
+      ensure();
+      const t0 = ac.currentTime;
+
+      // 低频短脉冲
+      const osc = ac.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(120, t0);
+      osc.frequency.exponentialRampToValueAtTime(55, t0 + 0.12);
+
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.22*intensity, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+
+      osc.connect(g); g.connect(master);
+      osc.start(t0);
+      osc.stop(t0 + 0.16);
+
+      // 气流噪声（短）
+      const bufLen = Math.floor(ac.sampleRate * 0.12);
+      const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<bufLen;i++){
+        const k = i / bufLen;
+        data[i] = (Math.random()*2-1) * Math.pow(1-k, 2.2);
+      }
+      const noise = ac.createBufferSource();
+      noise.buffer = buf;
+
+      const hp = ac.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = 450;
+
+      const ng = ac.createGain();
+      ng.gain.setValueAtTime(0.0001, t0);
+      ng.gain.exponentialRampToValueAtTime(0.10*intensity, t0 + 0.01);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.13);
+
+      noise.connect(hp); hp.connect(ng); ng.connect(master);
+      noise.start(t0);
+    }
+
+    // 上升啸叫：持续一段，频率上升 + 噪声气流（关键：要“尖”但不刺耳）
+    function startWhistle(durationSec=0.9, intensity=1){
+      if(!enabled) return null;
+      ensure();
+      const t0 = ac.currentTime;
+
+      // 主音：锯齿/三角更像烟花啸叫
+      const osc = ac.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(900, t0);
+      osc.frequency.exponentialRampToValueAtTime(2100, t0 + durationSec);
+
+      // 过滤：避免太刺
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 1400;
+      bp.Q.value = 1.2;
+
+      // 音量包络
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.06*intensity, t0 + 0.06);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + durationSec);
+
+      osc.connect(bp); bp.connect(g); g.connect(master);
+      osc.start(t0);
+      osc.stop(t0 + durationSec + 0.02);
+
+      // 叠一层“气流噪声”增强真实感
+      const bufLen = Math.floor(ac.sampleRate * durationSec);
+      const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<bufLen;i++){
+        // 轻噪，尾部衰减
+        const k = i / bufLen;
+        data[i] = (Math.random()*2-1) * 0.20 * Math.pow(1-k, 1.8);
+      }
+      const noise = ac.createBufferSource();
+      noise.buffer = buf;
+
+      const hp = ac.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = 800;
+
+      const ng = ac.createGain();
+      ng.gain.setValueAtTime(0.0001, t0);
+      ng.gain.exponentialRampToValueAtTime(0.03*intensity, t0 + 0.06);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + durationSec);
+
+      noise.connect(hp); hp.connect(ng); ng.connect(master);
+      noise.start(t0);
+
+      return { stop: () => { try{ osc.stop(); }catch{} } };
+    }
+
+    // 爆炸（保留但略更“烟花”）
+    function boom(intensity=1){
+      if(!enabled) return;
+      ensure();
+      const t0 = ac.currentTime;
+
+      const bufLen = Math.floor(ac.sampleRate * 0.18);
+      const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<bufLen;i++){
+        const k = i / bufLen;
+        data[i] = (Math.random()*2-1) * Math.pow(1-k, 2.4);
+      }
+      const noise = ac.createBufferSource();
+      noise.buffer = buf;
+
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 800;
+      bp.Q.value = 0.85;
+
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.28*intensity, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+
+      noise.connect(bp); bp.connect(g); g.connect(master);
+      noise.start(t0);
+
+      // 低频砰
+      const osc = ac.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(95, t0);
+      osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.14);
+
+      const gg = ac.createGain();
+      gg.gain.setValueAtTime(0.0001, t0);
+      gg.gain.exponentialRampToValueAtTime(0.16*intensity, t0 + 0.01);
+      gg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+
+      osc.connect(gg); gg.connect(master);
+      osc.start(t0);
+      osc.stop(t0 + 0.18);
+    }
+
+    return { setEnabled, launchPop, startWhistle, boom };
+  })();
+
+  // ===== Camera FX =====
+  let shakeT = 0, shakePower = 0;
+  function triggerBigBangFX(intensity){
+    $screenFX.style.opacity = String(clamp(0.10 + intensity*0.14, 0.10, 0.30));
+    setTimeout(() => { $screenFX.style.opacity = "0"; }, 120);
+
+    shakeT = 22;
+    shakePower = clamp(1.8 + intensity*2.2, 1.8, 4.2);
+  }
+  function applyShake(){
+    if(shakeT <= 0){
+      fx.style.transform = "";
+      stars.style.transform = "";
+      return;
+    }
+    shakeT--;
+    const k = shakeT / 22;
+    const p = shakePower * k;
+    const dx = (Math.random()*2-1) * p;
+    const dy = (Math.random()*2-1) * p;
+    const rot = (Math.random()*2-1) * p * 0.06;
+    const tr = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+    fx.style.transform = tr;
+    stars.style.transform = tr;
+  }
+
+  // ===== Types =====
+  const TYPE = {
+    CHRYS: "chrysanthemum",
+    PEONY: "peony",
+    WILLOW:"willow",
+    PALM:  "palm",
+    HEART: "heart",
+    TEXT:  "text",
+  };
+  function chooseType(){
+    const r = Math.random();
+    if(r < 0.22) return TYPE.CHRYS;
+    if(r < 0.42) return TYPE.PEONY;
+    if(r < 0.60) return TYPE.WILLOW;
+    if(r < 0.76) return TYPE.PALM;
+    if(r < 0.92) return TYPE.HEART;
+    return TYPE.TEXT;
+  }
+
+  // ===== Entities =====
+  const rockets = [];
+  const sparks = [];
+  const smokes = [];
+
+  function canAddParticles(n){
+    return sparks.length + smokes.length + n <= perf.maxParticles;
+  }
+
+  function swayOffset(phase, amp, freq, t){
+    return Math.sin(phase + t*freq) * amp + Math.sin(phase*1.7 + t*freq*0.7) * amp*0.35;
+  }
+
+  function addSmoke(x,y, strength=1){
+    if(!perf.smoke.enabled) return;
+    if(smokes.length >= perf.smoke.max) return;
+    smokes.push({
+      x: x + rand(-6,6),
+      y: y + rand(-6,6),
+      vx: rand(-0.10, 0.10),
+      vy: rand(-0.18, -0.06),
+      life: 0,
+      max: rand(90, 150),
+      r: rand(22, 42) * (0.8 + strength*0.45),
+      grow: rand(0.22, 0.42) * (0.8 + strength*0.35),
+      a0: rand(0.10, 0.18) * (0.75 + strength*0.35)
+    });
+  }
+
+  function makeSpark(x,y,vx,vy, rgb, opt={}){
+    const [cr,cg,cb] = rgb;
+    return {
+      x,y,vx,vy,
+      r: opt.r ?? rand(0.9, 2.0),
+      life:0,
+      max: opt.max ?? rand(54, 92),
+      drag: opt.drag ?? rand(0.975, 0.989),
+      grav: opt.grav ?? rand(0.03, 0.07),
+      cr: clamp(cr + rand(-(opt.shift??18), (opt.shift??18)), 0, 255),
+      cg: clamp(cg + rand(-(opt.shift??18), (opt.shift??18)), 0, 255),
+      cb: clamp(cb + rand(-(opt.shift??18), (opt.shift??18)), 0, 255),
+      tw: opt.tw ?? (Math.random()*1.0 + 0.2),
+      glow: opt.glow ?? 0.85,
+      longTrail: opt.longTrail ?? false
+    };
+  }
+
+  function launch(targetX=null, targetY=null, type=null){
+    if(rockets.length >= perf.maxRockets) return;
+
+    const x0 = rand(W*0.12, W*0.88);
+    const y0 = H + rand(10, 80);
+    const tx = targetX ?? rand(W*0.18, W*0.82);
+    const ty = targetY ?? rand(H*0.14, H*0.45);
+
+    const r = {
+      x:x0, y:y0,
+      vx: (tx - x0) / rand(42, 62),
+      vy: -rand(9.2, 13.2),
+      tx, ty,
+      life: 0,
+      maxLife: rand(52, 78),
+      phase: rand(0, Math.PI*2),
+      amp: rand(12, 38),
+      freq: rand(0.08, 0.16),
+      blurStart: 0.72,
+      blurEnd: 0.98,
+      color: pickColor(),
+      type: type ?? chooseType(),
+      // 音频：上升啸叫句柄
+      whistle: null,
+      whistleDur: rand(0.75, 1.20)
+    };
+    rockets.push(r);
+
+    // 更真实：发射“嘭” + 立刻开始啸叫（音量不大）
+    AudioSys.launchPop(0.95);
+    r.whistle = AudioSys.startWhistle(r.whistleDur, 1.0);
+  }
+
+  // ===== Text cache =====
+  const textCanvas = document.createElement('canvas');
+  const tctx = textCanvas.getContext('2d');
+  const textCache = new Map();
+  function getTextPoints(text, fontSize, step){
+    const key = `${text}|${fontSize}|${step}`;
+    const cached = textCache.get(key);
+    if(cached) return cached;
+
+    const pad = Math.floor(fontSize*0.35);
+    textCanvas.width = Math.floor(fontSize * (text.length*1.05) + pad*2);
+    textCanvas.height = Math.floor(fontSize*1.7 + pad*2);
+
+    tctx.clearRect(0,0,textCanvas.width,textCanvas.height);
+    tctx.fillStyle = "rgba(255,255,255,1)";
+    tctx.font = `900 ${fontSize}px ${getComputedStyle(document.body).fontFamily}`;
+    tctx.textAlign = "center";
+    tctx.textBaseline = "middle";
+    tctx.fillText(text, textCanvas.width/2, textCanvas.height/2);
+
+    const img = tctx.getImageData(0,0,textCanvas.width,textCanvas.height);
+    const pts = [];
+    for(let yy=0; yy<img.height; yy+=step){
+      for(let xx=0; xx<img.width; xx+=step){
+        const idx = (yy*img.width + xx)*4;
+        if(img.data[idx+3] > 10){
+          pts.push([xx - img.width/2, yy - img.height/2]);
+        }
+      }
+    }
+    if(textCache.size > 8){
+      const k0 = textCache.keys().next().value;
+      textCache.delete(k0);
+    }
+    textCache.set(key, pts);
+    return pts;
+  }
+
+  // ===== Explode dispatch =====
+  function explode(x,y, color, type){
+    const big = (type===TYPE.PEONY || type===TYPE.TEXT || type===TYPE.PALM);
+    if(big) triggerBigBangFX(type===TYPE.TEXT ? 1.15 : 1.0);
+
+    AudioSys.boom(big ? 1.10 : 0.92);
+
+    const smokeStrength = big ? 1.1 : 0.7;
+    addSmoke(x,y, smokeStrength);
+    addSmoke(x+rand(-18,18), y+rand(-12,12), smokeStrength*0.8);
+    if(big) addSmoke(x+rand(-26,26), y+rand(-18,18), smokeStrength*0.75);
+
+    if(type===TYPE.CHRYS) return explodeChrys(x,y,color);
+    if(type===TYPE.PEONY) return explodePeony(x,y,color);
+    if(type===TYPE.WILLOW) return explodeWillow(x,y,color);
+    if(type===TYPE.PALM)  return explodePalm(x,y,color);
+    if(type===TYPE.HEART) return explodeHeart(x,y,color);
+    return explodeText(x,y,color);
+  }
+
+  // ===== Explode impls (性能优先) =====
+  function explodeChrys(x,y,color){
+    const n = state.quality==="high" ? 200 : (state.quality==="mid" ? 140 : 100);
+    if(!canAddParticles(n)) return;
+    const power = rand(4.0, 5.8);
+    for(let i=0;i<n;i++){
+      const a = Math.random()*Math.PI*2;
+      const sp = power * (0.35 + Math.random()*0.85);
+      sparks.push(makeSpark(x,y, Math.cos(a)*sp, Math.sin(a)*sp, color, {
+        max: rand(62, 90),
+        grav: rand(0.03, 0.055),
+        glow: 0.82,
+        r: rand(0.9, 2.0),
+      }));
+    }
+  }
+
+  function explodePeony(x,y,color){
+    const outerN = state.quality==="high" ? 210 : (state.quality==="mid" ? 150 : 110);
+    const innerN = state.quality==="high" ? 90  : (state.quality==="mid" ? 60  : 44);
+    if(!canAddParticles(outerN+innerN)) return;
+    const outerPower = rand(5.1, 7.0);
+    const innerPower = outerPower * rand(0.45, 0.60);
+    const innerColor = colorShift(color, 34);
+
+    for(let i=0;i<outerN;i++){
+      const a = Math.random()*Math.PI*2;
+      const sp = outerPower * (0.35 + Math.random()*0.75);
+      sparks.push(makeSpark(x,y, Math.cos(a)*sp, Math.sin(a)*sp, color, {
+        max: rand(70, 105),
+        grav: rand(0.03, 0.055),
+        glow: 0.90,
+        r: rand(1.0, 2.1),
+      }));
+    }
+    for(let i=0;i<innerN;i++){
+      const a = Math.random()*Math.PI*2;
+      const sp = innerPower * (0.35 + Math.random()*0.85);
+      sparks.push(makeSpark(x,y, Math.cos(a)*sp, Math.sin(a)*sp, innerColor, {
+        max: rand(56, 84),
+        grav: rand(0.02, 0.05),
+        glow: 1.0,
+        r: rand(1.0, 2.2),
+        shift: 10
+      }));
+    }
+  }
+
+  function explodeWillow(x,y,color){
+    const n = state.quality==="high" ? 160 : (state.quality==="mid" ? 115 : 80);
+    if(!canAddParticles(n)) return;
+    const power = rand(3.2, 4.4);
+    const c = colorShift([255,210,122], 26);
+    for(let i=0;i<n;i++){
+      const a = Math.random()*Math.PI*2;
+      const sp = power * (0.35 + Math.random()*0.75);
+      sparks.push(makeSpark(x,y,
+        Math.cos(a)*sp,
+        Math.sin(a)*sp - rand(0.6, 1.4),
+        c,
+        {
+          max: rand(100, 150),
+          drag: rand(0.984, 0.994),
+          grav: rand(0.07, 0.10),
+          glow: 0.85,
+          r: rand(0.8, 1.6),
+          longTrail: true
+        }
+      ));
+    }
+  }
+
+  function explodePalm(x,y,color){
+    const branches = state.quality==="high" ? 12 : (state.quality==="mid" ? 10 : 8);
+    const seg = state.quality==="high" ? 18 : (state.quality==="mid" ? 14 : 10);
+    const n = branches * seg;
+    if(!canAddParticles(n)) return;
+    const power = rand(6.0, 7.8);
+    const trunkColor = colorShift([255,210,122], 18);
+
+    for(let b=0;b<branches;b++){
+      const a = (b/branches)*Math.PI*2 + rand(-0.18, 0.18);
+      const sp = power * rand(0.55, 0.90);
+      const vx = Math.cos(a)*sp;
+      const vy = Math.sin(a)*sp;
+
+      for(let i=0;i<seg;i++){
+        const t = i/seg;
+        sparks.push(makeSpark(x,y,
+          vx*(0.65 + t*0.55) + rand(-0.18,0.18),
+          vy*(0.65 + t*0.55) + rand(-0.22,0.22),
+          (Math.random()<0.7? trunkColor : color),
+          {
+            max: rand(78, 125),
+            drag: rand(0.982, 0.993),
+            grav: rand(0.05, 0.08),
+            glow: 0.92,
+            r: rand(0.9, 2.0),
+            shift: 14,
+            longTrail: true
+          }
+        ));
+      }
+    }
+  }
+
+  function explodeHeart(x,y,color){
+    const c = colorShift(color, 18); // 随机更炫
+    const steps = state.quality==="high" ? 220 : (state.quality==="mid" ? 160 : 110);
+    if(!canAddParticles(steps)) return;
+    const scale = rand(7.0, 9.2);
+
+    for(let i=0;i<steps;i++){
+      const t = (i/steps) * Math.PI*2;
+      const hx = 16*Math.pow(Math.sin(t),3);
+      const hy = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+      const dx = hx*scale;
+      const dy = -hy*scale;
+      const mag = Math.hypot(dx,dy) || 1;
+      const nx = dx/mag, ny = dy/mag;
+      const sp = rand(3.0, 4.4) * (0.75 + Math.random()*0.35);
+
+      sparks.push(makeSpark(x,y,
+        nx*sp + rand(-0.12,0.12),
+        ny*sp + rand(-0.12,0.12),
+        c,
+        {
+          max: rand(70, 105),
+          drag: rand(0.980, 0.992),
+          grav: rand(0.03, 0.06),
+          glow: 1.05,
+          r: rand(0.9, 2.0),
+          shift: 12
+        }
+      ));
+    }
+  }
+
+  function explodeText(x,y,color){
+    const text = (Math.random() < 0.5) ? "再见2025" : "你好2026";
+    const fontSize = Math.floor(
+      state.quality==="high" ? clamp(W*0.10, 56, 132) :
+      state.quality==="mid"  ? clamp(W*0.085, 48, 112) :
+                               clamp(W*0.075, 42, 96)
+    );
+    const step =
+      state.quality==="high" ? Math.max(4, Math.floor(fontSize/28)) :
+      state.quality==="mid"  ? Math.max(5, Math.floor(fontSize/24)) :
+                               Math.max(6, Math.floor(fontSize/20));
+
+    const pts = getTextPoints(text, fontSize, step);
+
+    const cap = state.quality==="high" ? 1200 : (state.quality==="mid" ? 800 : 520);
+    const take = Math.min(pts.length, cap);
+    if(!canAddParticles(take)) return;
+
+    const base = colorShift(color, 28); // 随机更炫
+    const spread = rand(3.0, 4.4);
+
+    const stride = Math.ceil(pts.length / take);
+    for(let i=0;i<pts.length && sparks.length < perf.maxParticles; i+=stride){
+      const [dx,dy] = pts[i];
+      const mag = Math.hypot(dx,dy) || 1;
+      const nx = dx/mag, ny = dy/mag;
+      const sp = spread * (0.75 + Math.random()*0.65);
+      sparks.push(makeSpark(x,y,
+        nx*sp + rand(-0.22,0.22),
+        ny*sp + rand(-0.22,0.22),
+        base,
+        {
+          max: rand(88, 132),
+          drag: rand(0.981, 0.993),
+          grav: rand(0.03, 0.06),
+          glow: 1.05,
+          r: rand(0.9, 2.0),
+          shift: 10,
+          longTrail: true
+        }
+      ));
+    }
+  }
+
+  // ===== Rendering =====
+  function drawRocket(r){
+    const p = r.life / r.maxLife;
+    const blurP = clamp((p - r.blurStart) / (r.blurEnd - r.blurStart), 0, 1);
+    const alpha = (1 - blurP) * 0.92;
+    const [cr,cg,cb] = r.color;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = `rgba(${cr},${cg},${cb},${alpha})`;
+    ctx.shadowColor = `rgba(${cr},${cg},${cb},${0.50*alpha})`;
+    ctx.shadowBlur = perf.shadowBlur * (1 - blurP);
+
+    ctx.beginPath();
+    ctx.moveTo(r.x, r.y);
+    ctx.lineTo(r.x - (r.vx*2.2), r.y - (r.vy*2.2));
+    ctx.stroke();
+
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.shadowColor = `rgba(${cr},${cg},${cb},${0.60*alpha})`;
+    ctx.shadowBlur = perf.shadowBlur + 6;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, 1.8, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSpark(p){
+    const k = p.life / p.max;
+    const flick = 0.65 + 0.35*Math.sin((p.life*0.25)*p.tw + p.x*0.01);
+    const a = (1-k) * flick;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = `rgba(${p.cr},${p.cg},${p.cb},${a})`;
+    ctx.shadowColor = `rgba(${p.cr},${p.cg},${p.cb},${a*p.glow})`;
+    ctx.shadowBlur = perf.shadowBlur;
+
+    if(p.longTrail){
+      ctx.lineWidth = 1.1;
+      ctx.strokeStyle = `rgba(${p.cr},${p.cg},${p.cb},${a*0.55})`;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.vx*1.7, p.y - p.vy*1.7);
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSmoke(s){
+    const k = s.life / s.max;
+    const a = (1-k) * s.a0;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = a;
+    const rr = s.r + s.grow * s.life;
+    ctx.drawImage(smokeStamp, s.x - rr, s.y - rr, rr*2, rr*2);
+    ctx.restore();
+  }
+
+  // ===== FPS estimator + auto downshift =====
+  let fpsAcc=0, fpsN=0, fpsLast=performance.now(), fpsValue=60;
+  function trackFPS(now){
+    fpsN++;
+    fpsAcc += 1000/(now - (fpsLast||now));
+    fpsLast = now;
+    if(fpsN >= 20){
+      fpsValue = fpsAcc / fpsN;
+      $fps.textContent = fpsValue.toFixed(0);
+
+      const canAuto = (now - state.dyn.lastAdjust) > 2000;
+      if(canAuto && fpsValue < 45 && state.quality !== "low"){
+        state.dyn.lastAdjust = now;
+        applyQuality(state.quality==="high" ? "mid" : "low");
+      }
+      fpsAcc=0; fpsN=0;
+    }
+  }
+
+  // ===== Countdown formatting =====
+  function fmt(ms){
+    const s = Math.max(0, Math.floor(ms/1000));
+    const dd = Math.floor(s/86400);
+    const hh = Math.floor((s%86400)/3600);
+    const mm = Math.floor((s%3600)/60);
+    const ss = s%60;
+    const pad = (n)=>String(n).padStart(2,"0");
+    const base = `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+    return dd>0 ? `${dd}天 ${base}` : base;
+  }
+
+  function updateCountdown(){
+    const left = TARGET - Date.now();
+    const small = left > 0 ? fmt(left) : "00:00:00";
+
+    // 面板内小倒计时一直更新（即使投射关闭，也保持布局）
+    $countdownSmall.textContent = small;
+
+    // 投射倒计时：更“若隐若现”
+    if(state.countdownOverlay){
+      const t = left > 0 ? fmt(left) : "00:00:00";
+      $holoTime.textContent = t;
+      $holoTime.dataset.t = t;
+
+      // 轻微呼吸闪烁：让它像“投射”而不是实 UI
+      const breathe = 0.28 + 0.10*Math.sin(performance.now()*0.0012);
+      $countOverlay.style.opacity = String(breathe);
+    }
+
+    // 零点触发
+    if(left <= 0 && state.finaleAtMidnight && !state.finaleTriggered){
+      state.finaleTriggered = true;
+      runFinale();
+    }
+  }
+
+  // ===== Auto launch =====
+  let nextLaunch = 0;
+  function autoLaunch(now){
+    if(!state.auto) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    if(now > nextLaunch){
+      const density = 0.65 + 0.35*Math.sin(now*0.00035);
+      const count = (Math.random() < 0.40 + density*0.25) ? 2 : 1;
+
+      for(let i=0;i<count;i++){
+        const t = (Math.random() < perf.textChance) ? TYPE.TEXT : null;
+        launch(null, null, t);
+      }
+
+      const [a,b] = perf.autoInterval;
+      const base = rand(a,b);
+      nextLaunch = now + base * (0.80 + (1-density)*0.7);
+    }
+  }
+
+  function runFinale(){
+    const duration = state.quality==="high" ? 2400 : (state.quality==="mid" ? 2200 : 2000);
+    const start = performance.now();
+    const types = [TYPE.PEONY, TYPE.CHRYS, TYPE.WILLOW, TYPE.PALM, TYPE.HEART, TYPE.TEXT];
+
+    const timer = setInterval(() => {
+      const elapsed = performance.now() - start;
+      if(elapsed > duration){
+        clearInterval(timer);
+        setTimeout(() => {
+          const cx = W*0.5, cy = H*0.28;
+          launch(cx, cy, TYPE.TEXT);
+        }, 120);
+        return;
+      }
+
+      const burst =
+        state.quality==="high" ? (3 + ((Math.random()*5)|0)) :
+        state.quality==="mid"  ? (2 + ((Math.random()*4)|0)) :
+                                 (2 + ((Math.random()*3)|0));
+
+      for(let i=0;i<burst;i++){
+        launch(rand(W*0.10, W*0.90), rand(H*0.14, H*0.55), types[(Math.random()*types.length)|0]);
+      }
+    }, state.quality==="high" ? 120 : (state.quality==="mid" ? 150 : 180));
+  }
+
+  // ===== Main loop =====
+  let last = performance.now();
+  function tick(now){
+    last = now;
+
+    drawStars(now);
+    applyShake();
+    updateCountdown();
+    autoLaunch(now);
+    trackFPS(now);
+
+    // 残影
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = `rgba(0,0,0,${perf.fadeAlpha})`;
+    ctx.fillRect(0,0,W,H);
+
+    // rockets update
+    for(let i=rockets.length-1;i>=0;i--){
+      const r = rockets[i];
+      r.life++;
+
+      const sway = swayOffset(r.phase, r.amp, r.freq, r.life);
+      r.vy += 0.055;
+      r.x += r.vx + sway*0.02;
+      r.y += r.vy;
+
+      drawRocket(r);
+
+      const near = Math.hypot(r.x - r.tx, r.y - r.ty) < 22;
+      if(near || r.life >= r.maxLife || r.y < H*0.08){
+        // 停止啸叫
+        if(r.whistle && r.whistle.stop) r.whistle.stop();
+        rockets.splice(i,1);
+        explode(r.x, r.y, r.color, r.type);
+      }
+    }
+
+    // smoke
+    for(let i=smokes.length-1;i>=0;i--){
+      const s = smokes[i];
+      s.life++;
+      if(s.life >= s.max){ smokes.splice(i,1); continue; }
+      s.x += s.vx;
+      s.y += s.vy;
+      drawSmoke(s);
+    }
+
+    // sparks
+    for(let i=sparks.length-1;i>=0;i--){
+      const p = sparks[i];
+      p.life++;
+      if(p.life >= p.max){ sparks.splice(i,1); continue; }
+
+      p.vx *= p.drag;
+      p.vy *= p.drag;
+      p.vy += p.grav;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      drawSpark(p);
+    }
+
+    // 硬裁剪（防卡死）
+    const over = (sparks.length + smokes.length) - perf.maxParticles;
+    if(over > 0){
+      smokes.splice(0, Math.min(over, smokes.length));
+      const stillOver = (sparks.length + smokes.length) - perf.maxParticles;
+      if(stillOver > 0) sparks.splice(0, Math.min(stillOver, sparks.length));
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  // ===== UI wiring =====
+  function openPanel(){
+    state.panelOpen = true;
+    $panel.hidden = false;
+  }
+  function closePanel(){
+    state.panelOpen = false;
+    $panel.hidden = true;
+  }
+  $dock.addEventListener('click', () => openPanel(), {passive:true});
+  $btnClose.addEventListener('click', () => closePanel(), {passive:true});
+
+  // 倒计时按钮：默认开；关了就保持现有面板布局显示小倒计时
+  function setCountdownOverlay(on){
+    state.countdownOverlay = !!on;
+    $btnCountdown.dataset.on = on ? "true" : "false";
+    $btnCountdown.textContent = on ? "开启" : "关闭";
+    $countOverlay.hidden = !on;
+    if(on){
+      // 立即同步一次
+      $countOverlay.style.opacity = "0.28";
+    }else{
+      $countOverlay.style.opacity = "0";
+    }
+  }
+  $btnCountdown.addEventListener('click', () => setCountdownOverlay(!state.countdownOverlay), {passive:true});
+
+  setToggle($tAuto, state.auto);
+  setToggle($tAudio, state.audio);
+  setToggle($tFinale, state.finaleAtMidnight);
+
+  $tAuto.addEventListener('click', () => {
+    state.auto = !state.auto;
+    setToggle($tAuto, state.auto);
+  });
+
+  $tFinale.addEventListener('click', () => {
+    state.finaleAtMidnight = !state.finaleAtMidnight;
+    setToggle($tFinale, state.finaleAtMidnight);
+  });
+
+  $tAudio.addEventListener('click', async () => {
+    state.audio = !state.audio;
+    setToggle($tAudio, state.audio);
+    await AudioSys.setEnabled(state.audio);
+  });
+
+  $qHigh.addEventListener('click', ()=>applyQuality("high"), {passive:true});
+  $qMid.addEventListener('click',  ()=>applyQuality("mid"), {passive:true});
+  $qLow.addEventListener('click',  ()=>applyQuality("low"), {passive:true});
+
+  $btnFinale.addEventListener('click', async () => {
+    if(state.audio) await AudioSys.setEnabled(true);
+    runFinale();
+  });
+
+  // 点击屏幕发射（也可作为音频解锁手势）
+  function onPointer(e){
+    const x = e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? W*0.5;
+    const y = e.clientY ?? (e.touches && e.touches[0]?.clientY) ?? H*0.35;
+    const tx = clamp(x, W*0.08, W*0.92);
+    const ty = clamp(y, H*0.10, H*0.55);
+
+    launch(tx + rand(-25,25), ty + rand(-18,18), TYPE.PEONY);
+    launch(tx + rand(-70,70), ty + rand(-45,45), chooseType());
+  }
+  addEventListener('pointerdown', onPointer, {passive:true});
+  addEventListener('touchstart', onPointer, {passive:true});
+
+  // ===== Start =====
+  applyQuality("mid");          // 默认中档，先保证流畅
+  setCountdownOverlay(true);    // 默认开启“投射倒计时”
+  closePanel();                // 默认收缩
+  resize();
+
+  // 开场：少量（避免开场就卡）
+  setTimeout(() => launch(null,null, TYPE.CHRYS), 200);
+  setTimeout(() => launch(null,null, TYPE.PEONY), 520);
+  setTimeout(() => launch(W*0.5, H*0.28, TYPE.TEXT), 1200);
+
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
